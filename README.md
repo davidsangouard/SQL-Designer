@@ -3,8 +3,6 @@
 > Visual database schema builder with smart import, auto-layout, and phpMyAdmin-level control.
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](https://opensource.org/licenses/MIT)
-[![No Dependencies](https://img.shields.io/badge/dependencies-none-green.svg)](/)
-[![Single File](https://img.shields.io/badge/file-single%20HTML-orange.svg)](/)
 
 ## Why SQL Designer?
 
@@ -90,14 +88,6 @@
 └─────────────┴──────────────────────┴─────────────────┘
 ```
 
-## Tech Stack
-
-- Pure vanilla JavaScript
-- Single HTML file
-- Zero dependencies
-- localStorage persistence
-- Works offline
-
 ## Perfect For
 
 - Database architects designing complex schemas
@@ -105,10 +95,6 @@
 - Teams collaborating on database structure
 - Students learning SQL relationships
 - Anyone who needs visual schema tools
-
-## Browser Support
-
-Chrome, Firefox, Safari, Edge (any modern browser)
 
 ## License
 
