@@ -1,0 +1,1830 @@
+<!--
+    ═════════════════════════════════════════════════════════
+    
+         ██████╗ ███████╗
+         ██╔══██╗██╔════╝
+         ██║  ██║███████╗    David Sangouard
+         ██║  ██║╚════██║    
+         ██████╔╝███████║    github.com/davidsangouard
+         ╚═════╝ ╚══════╝    
+    
+         » Architect of digital solutions
+         » Building the web, one pixel at a time
+    
+    ═════════════════════════════════════════════════════════
+-->
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SQL Designer - Visual Database Schema Builder</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        :root {
+            --midnight: #212842;
+            --cream: #F0E7D5;
+            --accent: #4A90E2;
+            --success: #6BCF7F;
+            --warning: #F39C12;
+            --danger: #E74C3C;
+            --border: rgba(240, 231, 213, 0.1);
+            --hover: rgba(240, 231, 213, 0.05);
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif;
+            background: var(--midnight);
+            color: var(--cream);
+            height: 100vh;
+            overflow: hidden;
+        }
+
+        .container {
+            display: grid;
+            grid-template-columns: 280px 1fr 320px;
+            height: 100vh;
+        }
+
+        .sidebar {
+            background: rgba(0, 0, 0, 0.2);
+            border-right: 1px solid var(--border);
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+        }
+
+        .header {
+            padding: 24px;
+            border-bottom: 1px solid var(--border);
+        }
+
+        .logo {
+            font-size: 20px;
+            font-weight: 600;
+            letter-spacing: -0.5px;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .logo svg {
+            width: 24px;
+            height: 24px;
+        }
+
+        .section {
+            padding: 20px;
+            border-bottom: 1px solid var(--border);
+            flex-shrink: 0;
+        }
+
+        .section-title {
+            font-size: 11px;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            opacity: 0.5;
+            margin-bottom: 12px;
+        }
+
+        .btn {
+            width: 100%;
+            padding: 12px 16px;
+            background: var(--accent);
+            color: var(--cream);
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 14px;
+            font-weight: 500;
+            transition: all 0.2s;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+        }
+
+        .btn:hover {
+            transform: translateY(-1px);
+            box-shadow: 0 4px 12px rgba(74, 144, 226, 0.3);
+        }
+
+        .btn-secondary {
+            background: transparent;
+            border: 1px solid var(--border);
+        }
+
+        .btn-secondary:hover {
+            background: var(--hover);
+            box-shadow: none;
+        }
+
+        .btn-sm {
+            padding: 8px 12px;
+            font-size: 13px;
+        }
+
+        .tables-list {
+            flex: 1;
+            overflow-y: auto;
+            padding: 20px;
+        }
+
+        .table-item {
+            padding: 12px;
+            background: var(--hover);
+            border: 1px solid var(--border);
+            border-radius: 6px;
+            margin-bottom: 8px;
+            cursor: move;
+            transition: all 0.2s;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+
+        .table-item:hover {
+            background: rgba(240, 231, 213, 0.08);
+            border-color: var(--accent);
+        }
+
+        .table-item.selected {
+            background: rgba(74, 144, 226, 0.15);
+            border-color: var(--accent);
+        }
+
+        .table-item-name {
+            font-weight: 500;
+            font-size: 14px;
+        }
+
+        .table-item-fields {
+            font-size: 12px;
+            opacity: 0.6;
+            margin-top: 4px;
+        }
+
+        .icon-btn {
+            background: none;
+            border: none;
+            color: var(--cream);
+            opacity: 0.6;
+            cursor: pointer;
+            padding: 4px;
+            transition: opacity 0.2s;
+        }
+
+        .icon-btn:hover {
+            opacity: 1;
+        }
+
+        .canvas {
+            position: relative;
+            background: 
+                repeating-linear-gradient(0deg, transparent, transparent 49px, rgba(240, 231, 213, 0.03) 49px, rgba(240, 231, 213, 0.03) 50px),
+                repeating-linear-gradient(90deg, transparent, transparent 49px, rgba(240, 231, 213, 0.03) 49px, rgba(240, 231, 213, 0.03) 50px);
+            overflow: auto;
+        }
+
+        .table-node {
+            position: absolute;
+            background: rgba(0, 0, 0, 0.4);
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            min-width: 240px;
+            box-shadow: 0 4px 16px rgba(0, 0, 0, 0.3);
+            backdrop-filter: blur(10px);
+        }
+
+        .table-node.selected {
+            border-color: var(--accent);
+            box-shadow: 0 0 0 2px rgba(74, 144, 226, 0.2);
+        }
+
+        .table-header {
+            padding: 16px;
+            border-bottom: 1px solid var(--border);
+            font-weight: 600;
+            cursor: move;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+
+        .table-body {
+            padding: 8px;
+        }
+
+        .field-row {
+            padding: 8px 12px;
+            display: grid;
+            grid-template-columns: 1fr auto auto;
+            gap: 8px;
+            align-items: center;
+            border-radius: 4px;
+            transition: background 0.2s;
+            font-size: 13px;
+        }
+
+        .field-row:hover {
+            background: var(--hover);
+        }
+
+        .field-name {
+            font-weight: 500;
+        }
+
+        .field-type {
+            opacity: 0.6;
+            font-size: 12px;
+        }
+
+        .field-key {
+            width: 20px;
+            height: 20px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 11px;
+            font-weight: 600;
+        }
+
+        .properties-panel {
+            background: rgba(0, 0, 0, 0.2);
+            border-left: 1px solid var(--border);
+            overflow-y: auto;
+        }
+
+        .panel-section {
+            padding: 20px;
+            border-bottom: 1px solid var(--border);
+        }
+
+        .form-group {
+            margin-bottom: 16px;
+        }
+
+        .form-label {
+            display: block;
+            font-size: 12px;
+            opacity: 0.7;
+            margin-bottom: 6px;
+        }
+
+        .form-input {
+            width: 100%;
+            padding: 10px 12px;
+            background: rgba(0, 0, 0, 0.3);
+            border: 1px solid var(--border);
+            border-radius: 6px;
+            color: var(--cream);
+            font-size: 14px;
+            transition: all 0.2s;
+        }
+
+        .form-input:focus {
+            outline: none;
+            border-color: var(--accent);
+            background: rgba(0, 0, 0, 0.4);
+        }
+
+        textarea.form-input {
+            resize: vertical;
+            font-family: 'Courier New', monospace;
+            line-height: 1.5;
+        }
+
+        .form-select {
+            width: 100%;
+            padding: 10px 12px;
+            background: rgba(0, 0, 0, 0.3);
+            border: 1px solid var(--border);
+            border-radius: 6px;
+            color: var(--cream);
+            font-size: 14px;
+            cursor: pointer;
+        }
+
+        .checkbox-group {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 12px;
+        }
+
+        .checkbox-label {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            font-size: 13px;
+            cursor: pointer;
+        }
+
+        .checkbox-label input {
+            cursor: pointer;
+        }
+
+        .fields-list {
+            max-height: 300px;
+            overflow-y: auto;
+        }
+
+        .field-item {
+            padding: 12px;
+            background: var(--hover);
+            border: 1px solid var(--border);
+            border-radius: 6px;
+            margin-bottom: 8px;
+        }
+
+        .field-item-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 8px;
+        }
+
+        .toolbar {
+            position: absolute;
+            top: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            display: flex;
+            gap: 8px;
+            background: rgba(0, 0, 0, 0.6);
+            padding: 8px;
+            border-radius: 8px;
+            border: 1px solid var(--border);
+            backdrop-filter: blur(10px);
+            z-index: 100;
+        }
+
+        .toolbar-btn {
+            padding: 8px 16px;
+            background: transparent;
+            border: none;
+            color: var(--cream);
+            cursor: pointer;
+            border-radius: 6px;
+            font-size: 13px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            transition: all 0.2s;
+        }
+
+        .toolbar-btn:hover {
+            background: var(--hover);
+        }
+
+        .toolbar-btn.active {
+            background: var(--accent);
+        }
+
+        .modal {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0, 0, 0, 0.8);
+            display: none;
+            align-items: center;
+            justify-content: center;
+            z-index: 1000;
+        }
+
+        .modal.active {
+            display: flex;
+        }
+
+        .modal-content {
+            background: var(--midnight);
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            padding: 24px;
+            max-width: 600px;
+            width: 90%;
+            max-height: 80vh;
+            overflow-y: auto;
+        }
+
+        .modal-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+        }
+
+        .modal-title {
+            font-size: 18px;
+            font-weight: 600;
+        }
+
+        .code-block {
+            background: rgba(0, 0, 0, 0.4);
+            border: 1px solid var(--border);
+            border-radius: 6px;
+            padding: 16px;
+            font-family: 'Courier New', monospace;
+            font-size: 13px;
+            line-height: 1.6;
+            overflow-x: auto;
+            white-space: pre;
+        }
+
+        .btn-group {
+            display: flex;
+            gap: 8px;
+            margin-top: 16px;
+        }
+
+        .connection-line {
+            position: absolute;
+            pointer-events: none;
+            z-index: 1;
+        }
+
+        .empty-state {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            text-align: center;
+            opacity: 0.3;
+        }
+
+        .empty-state svg {
+            width: 64px;
+            height: 64px;
+            margin-bottom: 16px;
+            opacity: 0.5;
+        }
+
+        ::-webkit-scrollbar {
+            width: 8px;
+            height: 8px;
+        }
+
+        ::-webkit-scrollbar-track {
+            background: transparent;
+        }
+
+        ::-webkit-scrollbar-thumb {
+            background: rgba(240, 231, 213, 0.2);
+            border-radius: 4px;
+        }
+
+        ::-webkit-scrollbar-thumb:hover {
+            background: rgba(240, 231, 213, 0.3);
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="sidebar">
+            <div class="header">
+                <div class="logo">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <rect x="3" y="3" width="18" height="18" rx="2"/>
+                        <path d="M3 9h18"/>
+                        <path d="M9 3v18"/>
+                    </svg>
+                    SQL Designer
+                </div>
+            </div>
+
+            <div class="section">
+                <div class="section-title">Actions</div>
+                <button class="btn" onclick="app.addTable()">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <line x1="12" y1="5" x2="12" y2="19"/>
+                        <line x1="5" y1="12" x2="19" y2="12"/>
+                    </svg>
+                    New Table
+                </button>
+            </div>
+
+            <div class="tables-list" id="tablesList">
+                <div class="empty-state">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <rect x="3" y="3" width="18" height="18" rx="2"/>
+                        <path d="M3 9h18"/>
+                        <path d="M9 3v18"/>
+                    </svg>
+                    <div>No tables yet</div>
+                </div>
+            </div>
+
+            <div class="section">
+                <button class="btn btn-secondary btn-sm" onclick="app.importSQL()">
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+                        <polyline points="17 8 12 3 7 8"/>
+                        <line x1="12" y1="3" x2="12" y2="15"/>
+                    </svg>
+                    Import SQL
+                </button>
+                <button class="btn btn-secondary btn-sm" onclick="app.exportSQL()" style="margin-top: 8px;">
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+                        <polyline points="7 10 12 15 17 10"/>
+                        <line x1="12" y1="15" x2="12" y2="3"/>
+                    </svg>
+                    Export SQL
+                </button>
+            </div>
+        </div>
+
+        <div class="canvas" id="canvas">
+            <div class="toolbar">
+                <button class="toolbar-btn" onclick="app.autoArrange()">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <rect x="3" y="3" width="7" height="7"/>
+                        <rect x="14" y="3" width="7" height="7"/>
+                        <rect x="14" y="14" width="7" height="7"/>
+                        <rect x="3" y="14" width="7" height="7"/>
+                    </svg>
+                </button>
+                <button class="toolbar-btn" onclick="app.zoomIn()">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <circle cx="11" cy="11" r="8"/>
+                        <line x1="21" y1="21" x2="16.65" y2="16.65"/>
+                        <line x1="11" y1="8" x2="11" y2="14"/>
+                        <line x1="8" y1="11" x2="14" y2="11"/>
+                    </svg>
+                </button>
+                <button class="toolbar-btn" onclick="app.zoomOut()">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <circle cx="11" cy="11" r="8"/>
+                        <line x1="21" y1="21" x2="16.65" y2="16.65"/>
+                        <line x1="8" y1="11" x2="14" y2="11"/>
+                    </svg>
+                </button>
+                <button class="toolbar-btn" onclick="app.resetView()">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M3 12a9 9 0 0 1 9-9 9.75 9.75 0 0 1 6.74 2.74L21 8"/>
+                        <path d="M21 3v5h-5"/>
+                    </svg>
+                </button>
+                <button class="toolbar-btn" onclick="app.clearAll()">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <polyline points="3 6 5 6 21 6"/>
+                        <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/>
+                    </svg>
+                </button>
+            </div>
+            <svg id="connections" style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none; z-index: 1;"></svg>
+        </div>
+
+        <div class="properties-panel" id="propertiesPanel">
+            <div class="panel-section">
+                <div class="section-title">Table Properties</div>
+                <div class="form-group">
+                    <label class="form-label">Table Name</label>
+                    <input type="text" class="form-input" id="tableName" placeholder="users">
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Comment</label>
+                    <input type="text" class="form-input" id="tableComment" placeholder="User accounts table">
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Engine</label>
+                    <select class="form-select" id="tableEngine">
+                        <option>InnoDB</option>
+                        <option>MyISAM</option>
+                        <option>Memory</option>
+                        <option>Archive</option>
+                        <option>CSV</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Charset</label>
+                    <select class="form-select" id="tableCharset">
+                        <option>utf8mb4</option>
+                        <option>utf8</option>
+                        <option>latin1</option>
+                        <option>ascii</option>
+                        <option>binary</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Collation</label>
+                    <select class="form-select" id="tableCollation">
+                        <option>utf8mb4_unicode_ci</option>
+                        <option>utf8mb4_general_ci</option>
+                        <option>utf8_general_ci</option>
+                        <option>latin1_swedish_ci</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Auto Increment</label>
+                    <input type="number" class="form-input" id="tableAutoIncrement" placeholder="1">
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Row Format</label>
+                    <select class="form-select" id="tableRowFormat">
+                        <option>Dynamic</option>
+                        <option>Compact</option>
+                        <option>Redundant</option>
+                        <option>Compressed</option>
+                    </select>
+                </div>
+            </div>
+
+            <div class="panel-section">
+                <div class="section-title">Fields</div>
+                <div class="fields-list" id="fieldsList"></div>
+                <button class="btn btn-secondary btn-sm" onclick="app.addField()" style="margin-top: 12px;">
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <line x1="12" y1="5" x2="12" y2="19"/>
+                        <line x1="5" y1="12" x2="19" y2="12"/>
+                    </svg>
+                    Add Field
+                </button>
+            </div>
+
+            <div class="panel-section">
+                <div class="section-title">Foreign Keys</div>
+                <div class="fields-list" id="foreignKeysList"></div>
+                <button class="btn btn-secondary btn-sm" onclick="app.addForeignKey()" style="margin-top: 12px;">
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M21 2l-2 2m-7.61 7.61a5.5 5.5 0 1 1-7.778 7.778 5.5 5.5 0 0 1 7.777-7.777zm0 0L15.5 7.5m0 0l3 3L22 7l-3-3m-3.5 3.5L19 4"/>
+                    </svg>
+                    Add Foreign Key
+                </button>
+            </div>
+
+            <div class="panel-section">
+                <div class="section-title">Indexes</div>
+                <div class="fields-list" id="indexesList"></div>
+                <button class="btn btn-secondary btn-sm" onclick="app.addIndex()" style="margin-top: 12px;">
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/>
+                        <polyline points="9 22 9 12 15 12 15 22"/>
+                    </svg>
+                    Add Index
+                </button>
+            </div>
+
+            <div class="panel-section">
+                <button class="btn" onclick="app.saveTableProperties()">Save Changes</button>
+                <button class="btn btn-secondary btn-sm" onclick="app.duplicateTable()" style="margin-top: 8px;">
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <rect x="9" y="9" width="13" height="13" rx="2" ry="2"/>
+                        <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/>
+                    </svg>
+                    Duplicate Table
+                </button>
+                <button class="btn btn-secondary btn-sm" onclick="app.deleteTable()" style="margin-top: 8px;">
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <polyline points="3 6 5 6 21 6"/>
+                        <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/>
+                    </svg>
+                    Delete Table
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <div class="modal" id="sqlModal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <div class="modal-title">Export SQL Schema</div>
+                <button class="icon-btn" onclick="app.closeModal()">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <line x1="18" y1="6" x2="6" y2="18"/>
+                        <line x1="6" y1="6" x2="18" y2="18"/>
+                    </svg>
+                </button>
+            </div>
+            <div class="form-group">
+                <label class="form-label">Export Options</label>
+                <div class="checkbox-group">
+                    <label class="checkbox-label">
+                        <input type="checkbox" id="exportDropTables" checked>
+                        Include DROP TABLE
+                    </label>
+                    <label class="checkbox-label">
+                        <input type="checkbox" id="exportIfNotExists">
+                        IF NOT EXISTS
+                    </label>
+                    <label class="checkbox-label">
+                        <input type="checkbox" id="exportAutoIncrement" checked>
+                        AUTO_INCREMENT values
+                    </label>
+                    <label class="checkbox-label">
+                        <input type="checkbox" id="exportComments" checked>
+                        Include comments
+                    </label>
+                </div>
+            </div>
+            <div class="code-block" id="sqlOutput"></div>
+            <div class="btn-group">
+                <button class="btn" onclick="app.copySQLToClipboard()">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <rect x="9" y="9" width="13" height="13" rx="2" ry="2"/>
+                        <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/>
+                    </svg>
+                    Copy to Clipboard
+                </button>
+                <button class="btn btn-secondary" onclick="app.downloadSQL()">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+                        <polyline points="7 10 12 15 17 10"/>
+                        <line x1="12" y1="15" x2="12" y2="3"/>
+                    </svg>
+                    Download SQL
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <div class="modal" id="importModal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <div class="modal-title">Import SQL Schema</div>
+                <button class="icon-btn" onclick="app.closeModal()">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <line x1="18" y1="6" x2="6" y2="18"/>
+                        <line x1="6" y1="6" x2="18" y2="18"/>
+                    </svg>
+                </button>
+            </div>
+            <div class="form-group">
+                <label class="form-label">Choose Import Method</label>
+                <div class="btn-group">
+                    <button class="btn btn-secondary" onclick="document.getElementById('fileInput').click()">
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="M13 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V9z"/>
+                            <polyline points="13 2 13 9 20 9"/>
+                        </svg>
+                        Upload SQL File
+                    </button>
+                </div>
+                <input type="file" id="fileInput" accept=".sql" style="display: none;" onchange="app.handleFileUpload(event)">
+            </div>
+            <div class="form-group">
+                <label class="form-label">Or Paste SQL Code</label>
+                <textarea class="form-input" id="sqlInput" rows="15" placeholder="Paste your SQL CREATE TABLE statements here..."></textarea>
+            </div>
+            <div class="btn-group">
+                <button class="btn" onclick="app.processSQLImport()">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <polyline points="20 6 9 17 4 12"/>
+                    </svg>
+                    Import Schema
+                </button>
+                <button class="btn btn-secondary" onclick="app.closeModal()">Cancel</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const app = {
+            tables: [],
+            selectedTable: null,
+            nextTableId: 1,
+
+            init() {
+                this.setupEventListeners();
+                this.loadFromLocalStorage();
+                this.render();
+            },
+
+            setupEventListeners() {
+                const canvas = document.getElementById('canvas');
+                canvas.addEventListener('click', (e) => {
+                    if (e.target === canvas) {
+                        this.selectTable(null);
+                    }
+                });
+
+                document.getElementById('tableName').addEventListener('input', () => this.updateSelectedTableProperty());
+                document.getElementById('tableComment').addEventListener('input', () => this.updateSelectedTableProperty());
+                document.getElementById('tableEngine').addEventListener('change', () => this.updateSelectedTableProperty());
+                document.getElementById('tableCharset').addEventListener('change', () => this.updateSelectedTableProperty());
+                document.getElementById('tableCollation').addEventListener('change', () => this.updateSelectedTableProperty());
+                document.getElementById('tableAutoIncrement').addEventListener('input', () => this.updateSelectedTableProperty());
+                document.getElementById('tableRowFormat').addEventListener('change', () => this.updateSelectedTableProperty());
+            },
+
+            addTable() {
+                const table = {
+                    id: this.nextTableId++,
+                    name: `table_${this.tables.length + 1}`,
+                    comment: '',
+                    engine: 'InnoDB',
+                    charset: 'utf8mb4',
+                    collation: 'utf8mb4_unicode_ci',
+                    autoIncrement: 1,
+                    rowFormat: 'Dynamic',
+                    x: 100 + (this.tables.length * 50),
+                    y: 100 + (this.tables.length * 50),
+                    fields: [
+                        {
+                            name: 'id',
+                            type: 'INT',
+                            length: '11',
+                            nullable: false,
+                            autoIncrement: true,
+                            primary: true,
+                            unique: false,
+                            index: false,
+                            unsigned: true,
+                            zerofill: false,
+                            default: '',
+                            comment: 'Primary key',
+                            onUpdate: ''
+                        }
+                    ],
+                    foreignKeys: [],
+                    indexes: []
+                };
+                this.tables.push(table);
+                this.selectTable(table);
+                this.render();
+                this.saveToLocalStorage();
+            },
+
+            duplicateTable() {
+                if (!this.selectedTable) return;
+                
+                const duplicated = JSON.parse(JSON.stringify(this.selectedTable));
+                duplicated.id = this.nextTableId++;
+                duplicated.name = this.selectedTable.name + '_copy';
+                duplicated.x += 50;
+                duplicated.y += 50;
+                
+                this.tables.push(duplicated);
+                this.selectTable(duplicated);
+                this.render();
+                this.saveToLocalStorage();
+            },
+
+            deleteTable() {
+                if (!this.selectedTable) return;
+                if (!confirm(`Delete table "${this.selectedTable.name}"?`)) return;
+
+                const index = this.tables.findIndex(t => t.id === this.selectedTable.id);
+                if (index > -1) {
+                    this.tables.splice(index, 1);
+                    this.selectTable(null);
+                    this.render();
+                    this.saveToLocalStorage();
+                }
+            },
+
+            selectTable(table) {
+                this.selectedTable = table;
+                this.renderProperties();
+                this.render();
+            },
+
+            updateSelectedTableProperty() {
+                if (!this.selectedTable) return;
+
+                this.selectedTable.name = document.getElementById('tableName').value;
+                this.selectedTable.comment = document.getElementById('tableComment').value;
+                this.selectedTable.engine = document.getElementById('tableEngine').value;
+                this.selectedTable.charset = document.getElementById('tableCharset').value;
+                this.selectedTable.collation = document.getElementById('tableCollation').value;
+                this.selectedTable.autoIncrement = parseInt(document.getElementById('tableAutoIncrement').value) || 1;
+                this.selectedTable.rowFormat = document.getElementById('tableRowFormat').value;
+
+                this.render();
+                this.saveToLocalStorage();
+            },
+
+            addField() {
+                if (!this.selectedTable) return;
+
+                const field = {
+                    name: `field_${this.selectedTable.fields.length + 1}`,
+                    type: 'VARCHAR',
+                    length: '255',
+                    nullable: true,
+                    autoIncrement: false,
+                    primary: false,
+                    unique: false,
+                    index: false,
+                    unsigned: false,
+                    zerofill: false,
+                    default: '',
+                    comment: '',
+                    onUpdate: ''
+                };
+
+                this.selectedTable.fields.push(field);
+                this.renderProperties();
+                this.render(); // Update canvas
+                this.saveToLocalStorage();
+            },
+
+            deleteField(index) {
+                if (!this.selectedTable) return;
+                if (this.selectedTable.fields.length === 1) {
+                    alert('Table must have at least one field');
+                    return;
+                }
+                this.selectedTable.fields.splice(index, 1);
+                this.renderProperties();
+                this.render(); // Update canvas
+                this.saveToLocalStorage();
+            },
+
+            addForeignKey() {
+                if (!this.selectedTable) return;
+
+                const fk = {
+                    name: `fk_${this.selectedTable.name}_${this.selectedTable.foreignKeys.length + 1}`,
+                    field: this.selectedTable.fields[0]?.name || '',
+                    referenceTable: '',
+                    referenceField: '',
+                    onDelete: 'RESTRICT',
+                    onUpdate: 'RESTRICT'
+                };
+
+                this.selectedTable.foreignKeys.push(fk);
+                this.renderProperties();
+                this.render(); // Update canvas for connections
+                this.saveToLocalStorage();
+            },
+
+            deleteForeignKey(index) {
+                if (!this.selectedTable) return;
+                this.selectedTable.foreignKeys.splice(index, 1);
+                this.renderProperties();
+                this.render(); // Update canvas for connections
+                this.saveToLocalStorage();
+            },
+
+            addIndex() {
+                if (!this.selectedTable) return;
+
+                const idx = {
+                    name: `idx_${this.selectedTable.name}_${this.selectedTable.indexes.length + 1}`,
+                    fields: [this.selectedTable.fields[0]?.name || ''],
+                    type: 'INDEX'
+                };
+
+                this.selectedTable.indexes.push(idx);
+                this.renderProperties();
+                this.render(); // Update canvas
+                this.saveToLocalStorage();
+            },
+
+            deleteIndex(index) {
+                if (!this.selectedTable) return;
+                this.selectedTable.indexes.splice(index, 1);
+                this.renderProperties();
+                this.render(); // Update canvas
+                this.saveToLocalStorage();
+            },
+
+            saveTableProperties() {
+                if (!this.selectedTable) return;
+
+                // Save table properties
+                this.selectedTable.name = document.getElementById('tableName').value;
+                this.selectedTable.comment = document.getElementById('tableComment').value;
+                this.selectedTable.engine = document.getElementById('tableEngine').value;
+                this.selectedTable.charset = document.getElementById('tableCharset').value;
+                this.selectedTable.collation = document.getElementById('tableCollation').value;
+                this.selectedTable.autoIncrement = parseInt(document.getElementById('tableAutoIncrement').value) || 1;
+                this.selectedTable.rowFormat = document.getElementById('tableRowFormat').value;
+
+                // Save fields
+                const fieldItems = document.querySelectorAll('.field-item');
+                const fields = Array.from(fieldItems).map((item, index) => {
+                    return {
+                        name: item.querySelector('[data-field="name"]').value,
+                        type: item.querySelector('[data-field="type"]').value,
+                        length: item.querySelector('[data-field="length"]').value,
+                        nullable: item.querySelector('[data-field="nullable"]').checked,
+                        autoIncrement: item.querySelector('[data-field="autoIncrement"]').checked,
+                        primary: item.querySelector('[data-field="primary"]').checked,
+                        unique: item.querySelector('[data-field="unique"]').checked,
+                        index: item.querySelector('[data-field="index"]').checked,
+                        unsigned: item.querySelector('[data-field="unsigned"]').checked,
+                        zerofill: item.querySelector('[data-field="zerofill"]').checked,
+                        default: item.querySelector('[data-field="default"]').value,
+                        comment: item.querySelector('[data-field="comment"]').value,
+                        onUpdate: item.querySelector('[data-field="onUpdate"]').value
+                    };
+                });
+
+                this.selectedTable.fields = fields;
+
+                // Save foreign keys
+                const fkItems = document.querySelectorAll('.fk-item');
+                const foreignKeys = Array.from(fkItems).map((item, index) => {
+                    return {
+                        name: item.querySelector('[data-fk="name"]').value,
+                        field: item.querySelector('[data-fk="field"]').value,
+                        referenceTable: item.querySelector('[data-fk="referenceTable"]').value,
+                        referenceField: item.querySelector('[data-fk="referenceField"]').value,
+                        onDelete: item.querySelector('[data-fk="onDelete"]').value,
+                        onUpdate: item.querySelector('[data-fk="onUpdate"]').value
+                    };
+                });
+
+                this.selectedTable.foreignKeys = foreignKeys;
+
+                // Save indexes
+                const idxItems = document.querySelectorAll('.idx-item');
+                const indexes = Array.from(idxItems).map((item, index) => {
+                    return {
+                        name: item.querySelector('[data-idx="name"]').value,
+                        fields: item.querySelector('[data-idx="fields"]').value.split(',').map(f => f.trim()),
+                        type: item.querySelector('[data-idx="type"]').value
+                    };
+                });
+
+                this.selectedTable.indexes = indexes;
+
+                // Update visual display and save to storage
+                this.render();
+                this.saveToLocalStorage();
+                
+                alert('Changes saved successfully');
+            },
+
+            renderProperties() {
+                const panel = document.getElementById('propertiesPanel');
+                
+                if (!this.selectedTable) {
+                    panel.style.opacity = '0.5';
+                    panel.style.pointerEvents = 'none';
+                    return;
+                }
+
+                panel.style.opacity = '1';
+                panel.style.pointerEvents = 'auto';
+
+                document.getElementById('tableName').value = this.selectedTable.name;
+                document.getElementById('tableComment').value = this.selectedTable.comment || '';
+                document.getElementById('tableEngine').value = this.selectedTable.engine;
+                document.getElementById('tableCharset').value = this.selectedTable.charset;
+                document.getElementById('tableCollation').value = this.selectedTable.collation || 'utf8mb4_unicode_ci';
+                document.getElementById('tableAutoIncrement').value = this.selectedTable.autoIncrement || 1;
+                document.getElementById('tableRowFormat').value = this.selectedTable.rowFormat || 'Dynamic';
+
+                const fieldsList = document.getElementById('fieldsList');
+                fieldsList.innerHTML = this.selectedTable.fields.map((field, index) => `
+                    <div class="field-item">
+                        <div class="field-item-header">
+                            <strong>${field.name}</strong>
+                            <button class="icon-btn" onclick="app.deleteField(${index})">
+                                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                    <polyline points="3 6 5 6 21 6"/>
+                                    <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/>
+                                </svg>
+                            </button>
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">Name</label>
+                            <input type="text" class="form-input" data-field="name" value="${field.name}">
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">Type</label>
+                            <select class="form-select" data-field="type">
+                                <option ${field.type === 'TINYINT' ? 'selected' : ''}>TINYINT</option>
+                                <option ${field.type === 'SMALLINT' ? 'selected' : ''}>SMALLINT</option>
+                                <option ${field.type === 'MEDIUMINT' ? 'selected' : ''}>MEDIUMINT</option>
+                                <option ${field.type === 'INT' ? 'selected' : ''}>INT</option>
+                                <option ${field.type === 'BIGINT' ? 'selected' : ''}>BIGINT</option>
+                                <option ${field.type === 'DECIMAL' ? 'selected' : ''}>DECIMAL</option>
+                                <option ${field.type === 'FLOAT' ? 'selected' : ''}>FLOAT</option>
+                                <option ${field.type === 'DOUBLE' ? 'selected' : ''}>DOUBLE</option>
+                                <option ${field.type === 'CHAR' ? 'selected' : ''}>CHAR</option>
+                                <option ${field.type === 'VARCHAR' ? 'selected' : ''}>VARCHAR</option>
+                                <option ${field.type === 'TINYTEXT' ? 'selected' : ''}>TINYTEXT</option>
+                                <option ${field.type === 'TEXT' ? 'selected' : ''}>TEXT</option>
+                                <option ${field.type === 'MEDIUMTEXT' ? 'selected' : ''}>MEDIUMTEXT</option>
+                                <option ${field.type === 'LONGTEXT' ? 'selected' : ''}>LONGTEXT</option>
+                                <option ${field.type === 'BINARY' ? 'selected' : ''}>BINARY</option>
+                                <option ${field.type === 'VARBINARY' ? 'selected' : ''}>VARBINARY</option>
+                                <option ${field.type === 'TINYBLOB' ? 'selected' : ''}>TINYBLOB</option>
+                                <option ${field.type === 'BLOB' ? 'selected' : ''}>BLOB</option>
+                                <option ${field.type === 'MEDIUMBLOB' ? 'selected' : ''}>MEDIUMBLOB</option>
+                                <option ${field.type === 'LONGBLOB' ? 'selected' : ''}>LONGBLOB</option>
+                                <option ${field.type === 'DATE' ? 'selected' : ''}>DATE</option>
+                                <option ${field.type === 'TIME' ? 'selected' : ''}>TIME</option>
+                                <option ${field.type === 'DATETIME' ? 'selected' : ''}>DATETIME</option>
+                                <option ${field.type === 'TIMESTAMP' ? 'selected' : ''}>TIMESTAMP</option>
+                                <option ${field.type === 'YEAR' ? 'selected' : ''}>YEAR</option>
+                                <option ${field.type === 'ENUM' ? 'selected' : ''}>ENUM</option>
+                                <option ${field.type === 'SET' ? 'selected' : ''}>SET</option>
+                                <option ${field.type === 'BOOLEAN' ? 'selected' : ''}>BOOLEAN</option>
+                                <option ${field.type === 'JSON' ? 'selected' : ''}>JSON</option>
+                                <option ${field.type === 'GEOMETRY' ? 'selected' : ''}>GEOMETRY</option>
+                                <option ${field.type === 'POINT' ? 'selected' : ''}>POINT</option>
+                                <option ${field.type === 'LINESTRING' ? 'selected' : ''}>LINESTRING</option>
+                                <option ${field.type === 'POLYGON' ? 'selected' : ''}>POLYGON</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">Length/Values</label>
+                            <input type="text" class="form-input" data-field="length" value="${field.length}" placeholder="255 or ('val1','val2') for ENUM">
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">Default Value</label>
+                            <input type="text" class="form-input" data-field="default" value="${field.default}" placeholder="NULL, CURRENT_TIMESTAMP, etc.">
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">On Update</label>
+                            <input type="text" class="form-input" data-field="onUpdate" value="${field.onUpdate || ''}" placeholder="CURRENT_TIMESTAMP">
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">Comment</label>
+                            <input type="text" class="form-input" data-field="comment" value="${field.comment}">
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">Attributes</label>
+                            <div class="checkbox-group">
+                                <label class="checkbox-label">
+                                    <input type="checkbox" data-field="nullable" ${field.nullable ? 'checked' : ''}>
+                                    NULL
+                                </label>
+                                <label class="checkbox-label">
+                                    <input type="checkbox" data-field="unsigned" ${field.unsigned ? 'checked' : ''}>
+                                    UNSIGNED
+                                </label>
+                                <label class="checkbox-label">
+                                    <input type="checkbox" data-field="zerofill" ${field.zerofill ? 'checked' : ''}>
+                                    ZEROFILL
+                                </label>
+                                <label class="checkbox-label">
+                                    <input type="checkbox" data-field="autoIncrement" ${field.autoIncrement ? 'checked' : ''}>
+                                    AUTO_INCREMENT
+                                </label>
+                            </div>
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">Keys</label>
+                            <div class="checkbox-group">
+                                <label class="checkbox-label">
+                                    <input type="checkbox" data-field="primary" ${field.primary ? 'checked' : ''}>
+                                    PRIMARY
+                                </label>
+                                <label class="checkbox-label">
+                                    <input type="checkbox" data-field="unique" ${field.unique ? 'checked' : ''}>
+                                    UNIQUE
+                                </label>
+                                <label class="checkbox-label">
+                                    <input type="checkbox" data-field="index" ${field.index ? 'checked' : ''}>
+                                    INDEX
+                                </label>
+                            </div>
+                        </div>
+                    </div>
+                `).join('');
+
+                const foreignKeysList = document.getElementById('foreignKeysList');
+                foreignKeysList.innerHTML = (this.selectedTable.foreignKeys || []).map((fk, index) => `
+                    <div class="field-item fk-item">
+                        <div class="field-item-header">
+                            <strong>${fk.name}</strong>
+                            <button class="icon-btn" onclick="app.deleteForeignKey(${index})">
+                                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                    <polyline points="3 6 5 6 21 6"/>
+                                    <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/>
+                                </svg>
+                            </button>
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">Constraint Name</label>
+                            <input type="text" class="form-input" data-fk="name" value="${fk.name}">
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">Field</label>
+                            <select class="form-select" data-fk="field">
+                                ${this.selectedTable.fields.map(f => `<option ${f.name === fk.field ? 'selected' : ''}>${f.name}</option>`).join('')}
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">Reference Table</label>
+                            <select class="form-select" data-fk="referenceTable">
+                                <option value="">Select table...</option>
+                                ${this.tables.filter(t => t.id !== this.selectedTable.id).map(t => `<option ${t.name === fk.referenceTable ? 'selected' : ''}>${t.name}</option>`).join('')}
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">Reference Field</label>
+                            <input type="text" class="form-input" data-fk="referenceField" value="${fk.referenceField}" placeholder="id">
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">On Delete</label>
+                            <select class="form-select" data-fk="onDelete">
+                                <option ${fk.onDelete === 'RESTRICT' ? 'selected' : ''}>RESTRICT</option>
+                                <option ${fk.onDelete === 'CASCADE' ? 'selected' : ''}>CASCADE</option>
+                                <option ${fk.onDelete === 'SET NULL' ? 'selected' : ''}>SET NULL</option>
+                                <option ${fk.onDelete === 'NO ACTION' ? 'selected' : ''}>NO ACTION</option>
+                                <option ${fk.onDelete === 'SET DEFAULT' ? 'selected' : ''}>SET DEFAULT</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">On Update</label>
+                            <select class="form-select" data-fk="onUpdate">
+                                <option ${fk.onUpdate === 'RESTRICT' ? 'selected' : ''}>RESTRICT</option>
+                                <option ${fk.onUpdate === 'CASCADE' ? 'selected' : ''}>CASCADE</option>
+                                <option ${fk.onUpdate === 'SET NULL' ? 'selected' : ''}>SET NULL</option>
+                                <option ${fk.onUpdate === 'NO ACTION' ? 'selected' : ''}>NO ACTION</option>
+                                <option ${fk.onUpdate === 'SET DEFAULT' ? 'selected' : ''}>SET DEFAULT</option>
+                            </select>
+                        </div>
+                    </div>
+                `).join('');
+
+                const indexesList = document.getElementById('indexesList');
+                indexesList.innerHTML = (this.selectedTable.indexes || []).map((idx, index) => `
+                    <div class="field-item idx-item">
+                        <div class="field-item-header">
+                            <strong>${idx.name}</strong>
+                            <button class="icon-btn" onclick="app.deleteIndex(${index})">
+                                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                    <polyline points="3 6 5 6 21 6"/>
+                                    <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/>
+                                </svg>
+                            </button>
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">Index Name</label>
+                            <input type="text" class="form-input" data-idx="name" value="${idx.name}">
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">Type</label>
+                            <select class="form-select" data-idx="type">
+                                <option ${idx.type === 'INDEX' ? 'selected' : ''}>INDEX</option>
+                                <option ${idx.type === 'UNIQUE' ? 'selected' : ''}>UNIQUE</option>
+                                <option ${idx.type === 'FULLTEXT' ? 'selected' : ''}>FULLTEXT</option>
+                                <option ${idx.type === 'SPATIAL' ? 'selected' : ''}>SPATIAL</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">Fields (comma separated)</label>
+                            <input type="text" class="form-input" data-idx="fields" value="${(idx.fields || []).join(', ')}">
+                        </div>
+                    </div>
+                `).join('');
+            },
+
+            render() {
+                this.renderTablesList();
+                this.renderCanvas();
+            },
+
+            renderTablesList() {
+                const list = document.getElementById('tablesList');
+                
+                if (this.tables.length === 0) {
+                    list.innerHTML = `
+                        <div class="empty-state">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <rect x="3" y="3" width="18" height="18" rx="2"/>
+                                <path d="M3 9h18"/>
+                                <path d="M9 3v18"/>
+                            </svg>
+                            <div>No tables yet</div>
+                        </div>
+                    `;
+                    return;
+                }
+
+                list.innerHTML = this.tables.map(table => {
+                    const isSelected = this.selectedTable?.id === table.id;
+                    return `
+                        <div class="table-item ${isSelected ? 'selected' : ''}" onclick="app.selectTable(app.tables.find(t => t.id === ${table.id}))">
+                            <div>
+                                <div class="table-item-name">${table.name}</div>
+                                <div class="table-item-fields">${table.fields.length} fields</div>
+                            </div>
+                        </div>
+                    `;
+                }).join('');
+            },
+
+            renderCanvas() {
+                const canvas = document.getElementById('canvas');
+                const existingNodes = canvas.querySelectorAll('.table-node');
+                existingNodes.forEach(node => node.remove());
+
+                this.tables.forEach(table => {
+                    const node = this.createTableNode(table);
+                    canvas.appendChild(node);
+                });
+
+                this.drawConnections();
+            },
+
+            createTableNode(table) {
+                const node = document.createElement('div');
+                node.className = 'table-node' + (this.selectedTable?.id === table.id ? ' selected' : '');
+                node.style.left = table.x + 'px';
+                node.style.top = table.y + 'px';
+
+                node.innerHTML = `
+                    <div class="table-header">
+                        <span>${table.name}</span>
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <rect x="3" y="3" width="18" height="18" rx="2"/>
+                            <path d="M3 9h18"/>
+                            <path d="M9 3v18"/>
+                        </svg>
+                    </div>
+                    <div class="table-body">
+                        ${table.fields.map(field => `
+                            <div class="field-row">
+                                <span class="field-name">${field.name}</span>
+                                <span class="field-type">${field.type}${field.length ? `(${field.length})` : ''}</span>
+                                <span class="field-key">
+                                    ${field.primary ? '🔑' : field.unique ? '🔒' : field.index ? '📇' : ''}
+                                </span>
+                            </div>
+                        `).join('')}
+                    </div>
+                `;
+
+                node.addEventListener('click', (e) => {
+                    e.stopPropagation();
+                    this.selectTable(table);
+                });
+
+                this.makeDraggable(node, table);
+
+                return node;
+            },
+
+            makeDraggable(element, table) {
+                let pos1 = 0, pos2 = 0, pos3 = 0, pos4 = 0;
+                const header = element.querySelector('.table-header');
+
+                header.onmousedown = dragMouseDown;
+
+                function dragMouseDown(e) {
+                    e.preventDefault();
+                    pos3 = e.clientX;
+                    pos4 = e.clientY;
+                    document.onmouseup = closeDragElement;
+                    document.onmousemove = elementDrag;
+                }
+
+                function elementDrag(e) {
+                    e.preventDefault();
+                    pos1 = pos3 - e.clientX;
+                    pos2 = pos4 - e.clientY;
+                    pos3 = e.clientX;
+                    pos4 = e.clientY;
+                    table.x = element.offsetLeft - pos1;
+                    table.y = element.offsetTop - pos2;
+                    element.style.left = table.x + 'px';
+                    element.style.top = table.y + 'px';
+                    app.drawConnections();
+                }
+
+                function closeDragElement() {
+                    document.onmouseup = null;
+                    document.onmousemove = null;
+                    app.saveToLocalStorage();
+                }
+            },
+
+            drawConnections() {
+                const svg = document.getElementById('connections');
+                svg.innerHTML = '';
+
+                this.tables.forEach(table => {
+                    if (!table.foreignKeys) return;
+
+                    table.foreignKeys.forEach(fk => {
+                        const refTable = this.tables.find(t => t.name === fk.referenceTable);
+                        if (!refTable) return;
+
+                        const fromNode = document.querySelector(`.table-node[style*="left: ${table.x}px"]`);
+                        const toNode = document.querySelector(`.table-node[style*="left: ${refTable.x}px"]`);
+                        
+                        if (!fromNode || !toNode) return;
+
+                        const fromRect = fromNode.getBoundingClientRect();
+                        const toRect = toNode.getBoundingClientRect();
+                        const canvasRect = svg.getBoundingClientRect();
+
+                        const x1 = fromRect.left - canvasRect.left + fromRect.width / 2;
+                        const y1 = fromRect.top - canvasRect.top + fromRect.height / 2;
+                        const x2 = toRect.left - canvasRect.left + toRect.width / 2;
+                        const y2 = toRect.top - canvasRect.top + toRect.height / 2;
+
+                        const line = document.createElementNS('http://www.w3.org/2000/svg', 'line');
+                        line.setAttribute('x1', x1);
+                        line.setAttribute('y1', y1);
+                        line.setAttribute('x2', x2);
+                        line.setAttribute('y2', y2);
+                        line.setAttribute('stroke', 'rgba(74, 144, 226, 0.5)');
+                        line.setAttribute('stroke-width', '2');
+                        line.setAttribute('stroke-dasharray', '5,5');
+
+                        svg.appendChild(line);
+                    });
+                });
+            },
+
+            importSQL() {
+                document.getElementById('sqlInput').value = '';
+                document.getElementById('importModal').classList.add('active');
+            },
+
+            handleFileUpload(event) {
+                const file = event.target.files[0];
+                if (!file) return;
+
+                const reader = new FileReader();
+                reader.onload = (e) => {
+                    document.getElementById('sqlInput').value = e.target.result;
+                };
+                reader.readAsText(file);
+            },
+
+            processSQLImport() {
+                const sqlText = document.getElementById('sqlInput').value.trim();
+                if (!sqlText) {
+                    alert('Please provide SQL code to import');
+                    return;
+                }
+
+                try {
+                    const parsedTables = this.parseSQLSchema(sqlText);
+                    
+                    if (parsedTables.length === 0) {
+                        alert('No valid CREATE TABLE statements found');
+                        return;
+                    }
+
+                    // Smart grid layout algorithm
+                    const tablesPerRow = Math.ceil(Math.sqrt(parsedTables.length));
+                    const horizontalSpacing = 350; // Space between tables horizontally
+                    const verticalSpacing = 400; // Space between tables vertically
+                    const startX = 100;
+                    const startY = 100;
+
+                    parsedTables.forEach((table, index) => {
+                        table.id = this.nextTableId++;
+                        
+                        // Calculate grid position
+                        const row = Math.floor(index / tablesPerRow);
+                        const col = index % tablesPerRow;
+                        
+                        table.x = startX + (col * horizontalSpacing);
+                        table.y = startY + (row * verticalSpacing);
+                        
+                        this.tables.push(table);
+                    });
+
+                    this.closeModal();
+                    this.render();
+                    this.saveToLocalStorage();
+                    
+                    alert(`Successfully imported ${parsedTables.length} table(s)`);
+                } catch (error) {
+                    alert('Error parsing SQL: ' + error.message);
+                    console.error(error);
+                }
+            },
+
+            parseSQLSchema(sql) {
+                const tables = [];
+                const createTableRegex = /CREATE\s+TABLE\s+(?:IF\s+NOT\s+EXISTS\s+)?`?(\w+)`?\s*\(([\s\S]*?)\)\s*(?:ENGINE\s*=\s*(\w+))?\s*(?:DEFAULT\s+CHARSET\s*=\s*(\w+))?\s*(?:COLLATE\s*=\s*(\w+))?\s*(?:AUTO_INCREMENT\s*=\s*(\d+))?\s*(?:COMMENT\s*=\s*'([^']*)')?\s*;/gi;
+
+                let match;
+                while ((match = createTableRegex.exec(sql)) !== null) {
+                    const tableName = match[1];
+                    const tableBody = match[2];
+                    const engine = match[3] || 'InnoDB';
+                    const charset = match[4] || 'utf8mb4';
+                    const collation = match[5] || 'utf8mb4_unicode_ci';
+                    const autoIncrement = parseInt(match[6]) || 1;
+                    const comment = match[7] || '';
+
+                    const table = {
+                        name: tableName,
+                        comment: comment,
+                        engine: engine,
+                        charset: charset,
+                        collation: collation,
+                        autoIncrement: autoIncrement,
+                        rowFormat: 'Dynamic',
+                        fields: [],
+                        foreignKeys: [],
+                        indexes: []
+                    };
+
+                    const lines = tableBody.split(',\n').map(l => l.trim());
+                    
+                    for (const line of lines) {
+                        if (line.startsWith('PRIMARY KEY')) {
+                            continue;
+                        } else if (line.startsWith('UNIQUE KEY') || line.startsWith('KEY') || line.startsWith('INDEX')) {
+                            const idxMatch = line.match(/(?:UNIQUE\s+)?(?:KEY|INDEX)\s+`?(\w+)`?\s+\(([^)]+)\)/i);
+                            if (idxMatch) {
+                                table.indexes.push({
+                                    name: idxMatch[1],
+                                    fields: idxMatch[2].split(',').map(f => f.trim().replace(/`/g, '')),
+                                    type: line.startsWith('UNIQUE') ? 'UNIQUE' : 'INDEX'
+                                });
+                            }
+                        } else if (line.startsWith('CONSTRAINT') || line.startsWith('FOREIGN KEY')) {
+                            const fkMatch = line.match(/FOREIGN\s+KEY\s+\(`?(\w+)`?\)\s+REFERENCES\s+`?(\w+)`?\s*\(`?(\w+)`?\)(?:\s+ON\s+DELETE\s+(\w+(?:\s+\w+)?))?(?:\s+ON\s+UPDATE\s+(\w+(?:\s+\w+)?))?/i);
+                            if (fkMatch) {
+                                table.foreignKeys.push({
+                                    name: `fk_${tableName}_${fkMatch[1]}`,
+                                    field: fkMatch[1],
+                                    referenceTable: fkMatch[2],
+                                    referenceField: fkMatch[3],
+                                    onDelete: fkMatch[4] || 'RESTRICT',
+                                    onUpdate: fkMatch[5] || 'RESTRICT'
+                                });
+                            }
+                        } else if (line.match(/^`?\w+`?\s+\w+/)) {
+                            const fieldMatch = line.match(/`?(\w+)`?\s+(\w+)(?:\(([^)]+)\))?(\s+UNSIGNED)?(\s+ZEROFILL)?(\s+NOT\s+NULL)?(\s+AUTO_INCREMENT)?(?:\s+DEFAULT\s+(.+?))?(?:\s+ON\s+UPDATE\s+(.+?))?(?:\s+COMMENT\s+'([^']*)')?/i);
+                            
+                            if (fieldMatch) {
+                                table.fields.push({
+                                    name: fieldMatch[1],
+                                    type: fieldMatch[2].toUpperCase(),
+                                    length: fieldMatch[3] || '',
+                                    unsigned: !!fieldMatch[4],
+                                    zerofill: !!fieldMatch[5],
+                                    nullable: !fieldMatch[6],
+                                    autoIncrement: !!fieldMatch[7],
+                                    default: fieldMatch[8] ? fieldMatch[8].replace(/'/g, '') : '',
+                                    onUpdate: fieldMatch[9] || '',
+                                    comment: fieldMatch[10] || '',
+                                    primary: false,
+                                    unique: false,
+                                    index: false
+                                });
+                            }
+                        }
+                    }
+
+                    const primaryMatch = tableBody.match(/PRIMARY\s+KEY\s+\(([^)]+)\)/i);
+                    if (primaryMatch) {
+                        const primaryFields = primaryMatch[1].split(',').map(f => f.trim().replace(/`/g, ''));
+                        primaryFields.forEach(fieldName => {
+                            const field = table.fields.find(f => f.name === fieldName);
+                            if (field) field.primary = true;
+                        });
+                    }
+
+                    tables.push(table);
+                }
+
+                return tables;
+            },
+
+            exportSQL() {
+                if (this.tables.length === 0) {
+                    alert('No tables to export');
+                    return;
+                }
+
+                const sql = this.generateSQL();
+                document.getElementById('sqlOutput').textContent = sql;
+                document.getElementById('sqlModal').classList.add('active');
+            },
+
+            generateSQL() {
+                const dropTables = document.getElementById('exportDropTables')?.checked ?? true;
+                const ifNotExists = document.getElementById('exportIfNotExists')?.checked ?? false;
+                const includeAutoIncrement = document.getElementById('exportAutoIncrement')?.checked ?? true;
+                const includeComments = document.getElementById('exportComments')?.checked ?? true;
+
+                let sql = '-- SQL Schema Export\n';
+                sql += `-- Generated: ${new Date().toISOString()}\n`;
+                sql += `-- Tables: ${this.tables.length}\n\n`;
+
+                this.tables.forEach(table => {
+                    if (includeComments && table.comment) {
+                        sql += `-- ${table.comment}\n`;
+                    }
+                    
+                    if (dropTables) {
+                        sql += `DROP TABLE IF EXISTS \`${table.name}\`;\n`;
+                    }
+                    
+                    sql += `CREATE TABLE ${ifNotExists ? 'IF NOT EXISTS ' : ''}\`${table.name}\` (\n`;
+
+                    const fieldDefs = table.fields.map(field => {
+                        let def = `  \`${field.name}\` ${field.type}`;
+                        
+                        if (field.length && !['TEXT', 'TINYTEXT', 'MEDIUMTEXT', 'LONGTEXT', 'DATE', 'DATETIME', 'TIMESTAMP', 'BLOB', 'TINYBLOB', 'MEDIUMBLOB', 'LONGBLOB', 'JSON'].includes(field.type)) {
+                            def += `(${field.length})`;
+                        }
+                        
+                        if (field.unsigned) def += ' UNSIGNED';
+                        if (field.zerofill) def += ' ZEROFILL';
+                        if (!field.nullable) def += ' NOT NULL';
+                        if (field.autoIncrement) def += ' AUTO_INCREMENT';
+                        
+                        if (field.default && !field.autoIncrement) {
+                            if (['CURRENT_TIMESTAMP', 'NULL'].includes(field.default.toUpperCase())) {
+                                def += ` DEFAULT ${field.default.toUpperCase()}`;
+                            } else {
+                                def += ` DEFAULT '${field.default}'`;
+                            }
+                        }
+                        
+                        if (field.onUpdate) {
+                            def += ` ON UPDATE ${field.onUpdate}`;
+                        }
+                        
+                        if (includeComments && field.comment) {
+                            def += ` COMMENT '${field.comment}'`;
+                        }
+                        
+                        return def;
+                    });
+
+                    sql += fieldDefs.join(',\n');
+
+                    const primaryKeys = table.fields.filter(f => f.primary).map(f => f.name);
+                    if (primaryKeys.length > 0) {
+                        sql += `,\n  PRIMARY KEY (\`${primaryKeys.join('`, `')}\`)`;
+                    }
+
+                    const uniqueKeys = table.fields.filter(f => f.unique && !f.primary);
+                    uniqueKeys.forEach(field => {
+                        sql += `,\n  UNIQUE KEY \`${field.name}_unique\` (\`${field.name}\`)`;
+                    });
+
+                    const indexKeys = table.fields.filter(f => f.index && !f.primary && !f.unique);
+                    indexKeys.forEach(field => {
+                        sql += `,\n  KEY \`${field.name}_index\` (\`${field.name}\`)`;
+                    });
+
+                    if (table.indexes && table.indexes.length > 0) {
+                        table.indexes.forEach(idx => {
+                            if (idx.type === 'UNIQUE') {
+                                sql += `,\n  UNIQUE KEY \`${idx.name}\` (\`${idx.fields.join('`, `')}\`)`;
+                            } else if (idx.type === 'FULLTEXT') {
+                                sql += `,\n  FULLTEXT KEY \`${idx.name}\` (\`${idx.fields.join('`, `')}\`)`;
+                            } else if (idx.type === 'SPATIAL') {
+                                sql += `,\n  SPATIAL KEY \`${idx.name}\` (\`${idx.fields.join('`, `')}\`)`;
+                            } else {
+                                sql += `,\n  KEY \`${idx.name}\` (\`${idx.fields.join('`, `')}\`)`;
+                            }
+                        });
+                    }
+
+                    if (table.foreignKeys && table.foreignKeys.length > 0) {
+                        table.foreignKeys.forEach(fk => {
+                            sql += `,\n  CONSTRAINT \`${fk.name}\` FOREIGN KEY (\`${fk.field}\`) REFERENCES \`${fk.referenceTable}\` (\`${fk.referenceField}\`)`;
+                            if (fk.onDelete && fk.onDelete !== 'RESTRICT') {
+                                sql += ` ON DELETE ${fk.onDelete}`;
+                            }
+                            if (fk.onUpdate && fk.onUpdate !== 'RESTRICT') {
+                                sql += ` ON UPDATE ${fk.onUpdate}`;
+                            }
+                        });
+                    }
+
+                    sql += `\n) ENGINE=${table.engine}`;
+                    
+                    if (includeAutoIncrement && table.autoIncrement > 1) {
+                        sql += ` AUTO_INCREMENT=${table.autoIncrement}`;
+                    }
+                    
+                    sql += ` DEFAULT CHARSET=${table.charset}`;
+                    
+                    if (table.collation) {
+                        sql += ` COLLATE=${table.collation}`;
+                    }
+                    
+                    if (table.rowFormat) {
+                        sql += ` ROW_FORMAT=${table.rowFormat}`;
+                    }
+                    
+                    if (includeComments && table.comment) {
+                        sql += ` COMMENT='${table.comment}'`;
+                    }
+                    
+                    sql += ';\n\n';
+                });
+
+                return sql;
+            },
+
+            copySQLToClipboard() {
+                const sql = document.getElementById('sqlOutput').textContent;
+                navigator.clipboard.writeText(sql).then(() => {
+                    alert('SQL copied to clipboard');
+                });
+            },
+
+            downloadSQL() {
+                const sql = document.getElementById('sqlOutput').textContent;
+                const blob = new Blob([sql], { type: 'text/plain' });
+                const url = URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = 'schema.sql';
+                a.click();
+                URL.revokeObjectURL(url);
+            },
+
+            closeModal() {
+                document.getElementById('sqlModal').classList.remove('active');
+                document.getElementById('importModal').classList.remove('active');
+            },
+
+            zoomIn() {
+                const canvas = document.getElementById('canvas');
+                const nodes = canvas.querySelectorAll('.table-node');
+                nodes.forEach(node => {
+                    const scale = parseFloat(node.style.transform?.match(/scale\(([\d.]+)\)/)?.[1] || 1);
+                    node.style.transform = `scale(${Math.min(scale * 1.1, 2)})`;
+                });
+            },
+
+            zoomOut() {
+                const canvas = document.getElementById('canvas');
+                const nodes = canvas.querySelectorAll('.table-node');
+                nodes.forEach(node => {
+                    const scale = parseFloat(node.style.transform?.match(/scale\(([\d.]+)\)/)?.[1] || 1);
+                    node.style.transform = `scale(${Math.max(scale * 0.9, 0.5)})`;
+                });
+            },
+
+            resetView() {
+                const canvas = document.getElementById('canvas');
+                canvas.scrollTop = 0;
+                canvas.scrollLeft = 0;
+                const nodes = canvas.querySelectorAll('.table-node');
+                nodes.forEach(node => {
+                    node.style.transform = 'scale(1)';
+                });
+            },
+
+            clearAll() {
+                if (!confirm('Clear all tables? This cannot be undone.')) return;
+                this.tables = [];
+                this.selectedTable = null;
+                this.render();
+                this.saveToLocalStorage();
+            },
+
+            autoArrange() {
+                if (this.tables.length === 0) return;
+
+                const tablesPerRow = Math.ceil(Math.sqrt(this.tables.length));
+                const horizontalSpacing = 350;
+                const verticalSpacing = 400;
+                const startX = 100;
+                const startY = 100;
+
+                this.tables.forEach((table, index) => {
+                    const row = Math.floor(index / tablesPerRow);
+                    const col = index % tablesPerRow;
+                    
+                    table.x = startX + (col * horizontalSpacing);
+                    table.y = startY + (row * verticalSpacing);
+                });
+
+                this.render();
+                this.saveToLocalStorage();
+            },
+
+            saveToLocalStorage() {
+                localStorage.setItem('sqlDesignerTables', JSON.stringify(this.tables));
+                localStorage.setItem('sqlDesignerNextId', this.nextTableId);
+            },
+
+            loadFromLocalStorage() {
+                const saved = localStorage.getItem('sqlDesignerTables');
+                if (saved) {
+                    this.tables = JSON.parse(saved);
+                }
+                const savedId = localStorage.getItem('sqlDesignerNextId');
+                if (savedId) {
+                    this.nextTableId = parseInt(savedId);
+                }
+            }
+        };
+
+        window.addEventListener('DOMContentLoaded', () => {
+            app.init();
+        });
+
+        window.addEventListener('click', (e) => {
+            if (e.target.classList.contains('modal')) {
+                app.closeModal();
+            }
+        });
+    </script>
+</body>
+</html>
